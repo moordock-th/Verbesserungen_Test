@@ -4,29 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChordWanze - Pro Edition</title>
-<link rel="apple-touch-icon" href="icon-512.png">
-    
+    <link rel="apple-touch-icon" href="icon-512.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
     <style>
-        :root { --primary: #38bdf8; --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; }
+        :root { --primary: #38bdf8; --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --accent: #22c55e; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
         .no-print { display: block; }
         
-        .header-ui { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .header-ui { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end; }
         .input-group { display: flex; flex-direction: column; gap: 5px; }
         label { font-size: 0.75rem; color: var(--primary); font-weight: bold; text-transform: uppercase; }
         
         input, select, textarea { background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 6px; }
-        textarea { width: 100%; height: 350px; font-family: 'Fira Code', monospace; font-size: 14px; resize: none; box-sizing: border-box; }
+        textarea { width: 100%; height: 450px; font-family: 'Fira Code', monospace; font-size: 14px; resize: none; box-sizing: border-box; }
 
-        .app-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        @media (max-width: 900px) { .app-grid { grid-template-columns: 1fr; } }
+        .app-grid { display: grid; grid-template-columns: 300px 1fr 1fr; gap: 20px; }
+        @media (max-width: 1100px) { .app-grid { grid-template-columns: 1fr; } .sidebar { order: 3; } }
+
+        /* Sidebar / Library */
+        .sidebar { background: var(--card); padding: 15px; border-radius: 12px; height: fit-content; }
+        .song-list { list-style: none; padding: 0; margin-top: 10px; max-height: 400px; overflow-y: auto; }
+        .song-item { background: #0f172a; padding: 8px 12px; margin-bottom: 5px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .song-item:hover { border-color: var(--primary); background: #1e293b; }
+        .delete-btn { color: #ef4444; border: none; background: none; cursor: pointer; font-weight: bold; padding: 0 5px; }
 
         .preview-box { background: white; color: #1e293b; padding: 40px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); min-height: 600px; }
         .song-header { border-bottom: 3px solid #38bdf8; margin-bottom: 20px; padding-bottom: 10px; }
@@ -43,6 +47,11 @@
 
         .btn { background: var(--primary); color: #0f172a; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn:hover { background: white; }
+        .btn-save { background: var(--accent); }
+        .btn-secondary { background: #475569; color: white; font-size: 0.8rem; }
+        
+        /* Status Indicator for Cloud Load */
+        #cloudStatus { font-size: 0.7rem; color: #64748b; margin-top: 5px; text-align: right; }
 
         @media print {
             .no-print { display: none !important; }
@@ -54,8 +63,11 @@
 <body>
 
 <div class="container">
-    <div style="padding: 10px 0; color: var(--primary); font-size: 0.9rem; font-weight: bold;" class="no-print">
-        ChrodWanze Pro - made by Superwanze
+    <div style="display:flex; justify-content:space-between; align-items:center;" class="no-print">
+        <div style="padding: 10px 0; color: var(--primary); font-size: 0.9rem; font-weight: bold;">
+            ChordWanze Pro - Cloud Edition
+        </div>
+        <div id="cloudStatus">System bereit</div>
     </div>
 
     <div class="header-ui no-print">
@@ -71,27 +83,38 @@
             <label>Gitarren-Tuning</label>
             <select id="tuningSelect" onchange="render()">
                 <option value="standard">Standard (E A D G B E)</option>
-                <option value="eb">Eb Tuning (Halbton tiefer)</option>
-                <option value="dropD">Drop D (D A D G B E)</option>
+                <option value="eb">Eb Tuning</option>
+                <option value="dropD">Drop D</option>
             </select>
         </div>
-        <button class="btn" onclick="window.print()">🖨️ PDF / DRUCKEN</button>
+        <button class="btn btn-save" onclick="saveCurrentSong()">💾 Speichern (Lokal)</button>
+        <button class="btn" onclick="window.print()">🖨️ PDF / Drucken</button>
     </div>
 
     <div class="app-grid">
-        <div class="no-print">
-            <label>Editor (Akkorde werden automatisch erkannt)</label>
-            <textarea id="editor" oninput="render()" placeholder="Akkorde einfach in den Text schreiben, z.B. G C D..."></textarea>
-            <div class="no-print" style="margin-top: 30px;">
-                <button class="btn" style="background: #475569; width: 100%;" onclick="toggleLibrary()">📚 Akkord-Bibliothek</button>
-                <div id="chordLibrary" style="display: none; background: var(--card); margin-top: 10px; padding: 20px; border-radius: 12px; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px;"></div>
+        <div class="sidebar no-print">
+            <label>Meine Song-Bibliothek</label>
+            <ul id="savedSongsList" class="song-list"></ul>
+            <hr style="border: 0; border-top: 1px solid #334155; margin: 15px 0;">
+            <div style="display: flex; gap: 5px; flex-direction: column;">
+                <button class="btn btn-secondary" onclick="exportLibrary()">📥 Backup erstellen (Download)</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📤 Backup Laden</button>
+                <input type="file" id="importFile" style="display:none" onchange="importLibrary(event)">
+            </div>
+            <div style="margin-top:15px; font-size:0.75rem; color:#64748b; line-height:1.4;">
+                Tipp: Lade die Backup-Datei in dein GitHub Repo hoch, um sie automatisch auf allen Geräten zu synchronisieren.
             </div>
         </div>
 
+        <div class="no-print">
+            <label>Editor (Akkorde automatisch erkannt)</label>
+            <textarea id="editor" oninput="render()" placeholder="Akkorde einfach in den Text schreiben..."></textarea>
+            <button class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="toggleLibrary()">📚 Akkord-Bibliothek anzeigen</button>
+            <div id="chordLibrary" style="display: none; background: var(--card); margin-top: 10px; padding: 20px; border-radius: 12px; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px;"></div>
+        </div>
+
         <div class="preview-box" id="preview">
-            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 10px; font-family: sans-serif;">
-                Song-Helper App Pro
-            </div>
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 10px; font-family: sans-serif;">Song-Helper App Pro</div>
             <div class="song-header">
                 <h1 class="song-title" id="outTitle">Mein Song</h1>
                 <div class="meta-info" id="outMeta">Key: - | Tuning: Standard</div>
@@ -107,64 +130,36 @@
 const notes = ['E','F','F#','G','G#','A','A#','B','C','C#','D','D#'];
 const altNames = {'Bb':'A#', 'Db':'C#', 'Eb':'D#', 'Gb':'F#', 'Ab':'G#', 'H':'B'};
 const tuningOffsets = { 'standard': [0,0,0,0,0,0], 'eb': [-1,-1,-1,-1,-1,-1], 'dropD': [-2,0,0,0,0,0] };
-
-const baseShapes = {
-    '': [0,2,2,1,0,0], 'm': [0,2,2,0,0,0], '7': [0,2,0,1,0,0], 'maj7': [0,2,1,1,0,0], 
-    'sus4': [0,2,2,2,0,0], 'sus2': [0,2,4,4,0,0]
-};
-
+const baseShapes = { '': [0,2,2,1,0,0], 'm': [0,2,2,0,0,0], '7': [0,2,0,1,0,0], 'maj7': [0,2,1,1,0,0], 'sus4': [0,2,2,2,0,0], 'sus2': [0,2,4,4,0,0] };
 const patterns = {};
 
-// --- GENERIERUNGSLOGIK ---
 notes.forEach((note, i) => {
     ['','m','7','maj7','5', 'sus4', 'sus2'].forEach(ext => {
         let pattern;
         if (ext === '5') {
-            // KORRIGIERTE POWERCHORD LOGIK (Grundton + Quinte)
-            // Bevorzugt tiefe Saiten für Powerchords
-            if (i <= 7) { 
-                // E-Saiten-Form (E5 bis B5)
-                pattern = [i, i + 2, i + 2, -1, -1, -1];
-            } else { 
-                // A-Saiten-Form (C5 bis D#5) -> Index relativ zur A-Saite (A=5)
-                let aFret = i - 5;
-                pattern = [-1, aFret, aFret + 2, aFret + 2, -1, -1];
-            }
+            if (i <= 7) pattern = [i, i + 2, i + 2, -1, -1, -1];
+            else { let aFret = i - 5; pattern = [-1, aFret, aFret + 2, aFret + 2, -1, -1]; }
         } else {
-            // Barree-Logik für Standard-Akkorde
             let shape = baseShapes[ext] || baseShapes[''];
-            if (i <= 4) { // E-Form
-                pattern = shape.map(f => f === -1 ? -1 : f + i);
-            } else { // A-Form
+            if (i <= 4) pattern = shape.map(f => f === -1 ? -1 : f + i);
+            else {
                 let aShape = (ext === 'm') ? [-1,0,2,2,1,0] : (ext === '7') ? [-1,0,2,0,2,0] : [-1,0,2,2,2,0];
-                let dist = i - 5;
-                pattern = aShape.map(f => f === -1 ? -1 : f + dist);
+                let dist = i - 5; pattern = aShape.map(f => f === -1 ? -1 : f + dist);
             }
         }
         patterns[note + ext] = pattern;
     });
 });
 
-// Aliasse hinzufügen (H -> B, Bb -> A#)
 Object.keys(altNames).forEach(alt => {
     const orig = altNames[alt];
-    ['','m','7','maj7','5','sus4','sus2'].forEach(ext => {
-        if(patterns[orig+ext]) patterns[alt+ext] = patterns[orig+ext];
-    });
+    ['','m','7','maj7','5','sus4','sus2'].forEach(ext => { if(patterns[orig+ext]) patterns[alt+ext] = patterns[orig+ext]; });
 });
 
-// MANUELLE KORREKTUREN FÜR OFFENE AKKORDE
-patterns['C'] = [-1,3,2,0,1,0]; 
-patterns['D'] = [-1,-1,0,2,3,2]; 
-patterns['G'] = [3,2,0,0,0,3];
-patterns['E'] = [0,2,2,1,0,0]; 
-patterns['A'] = [-1,0,2,2,2,0]; 
-patterns['F'] = [1,3,3,2,1,1];
-patterns['Am'] = [-1,0,2,2,1,0];
-patterns['Em'] = [0,2,2,0,0,0];
-patterns['Dm'] = [-1,-1,0,2,3,1];
+patterns['C'] = [-1,3,2,0,1,0]; patterns['D'] = [-1,-1,0,2,3,2]; patterns['G'] = [3,2,0,0,0,3];
+patterns['E'] = [0,2,2,1,0,0]; patterns['A'] = [-1,0,2,2,2,0]; patterns['F'] = [1,3,3,2,1,1];
+patterns['Am'] = [-1,0,2,2,1,0]; patterns['Em'] = [0,2,2,0,0,0]; patterns['Dm'] = [-1,-1,0,2,3,1];
 
-// --- HILFSFUNKTIONEN ---
 function isChord(word) {
     const clean = word.replace(/[()\[\]]/g, '').trim();
     return /^[a-hA-H][b#]?(m|maj|min|maj7|7|sus2|sus4|add9|dim|5)?$/i.test(clean);
@@ -173,31 +168,18 @@ function isChord(word) {
 function createSvg(frets) {
     const tuningKey = document.getElementById('tuningSelect')?.value || 'standard';
     const tuning = tuningOffsets[tuningKey];
-    
-    // Tuning anwenden
     const adj = frets.map((f, i) => (f <= 0) ? f : f - tuning[i]);
-    
-    // Dynamischen Offset (Bundzahl) berechnen
     const pressed = adj.filter(f => f > 0);
     const minFret = pressed.length > 0 ? Math.min(...pressed) : 0;
     const offset = minFret > 2 ? minFret : 0;
-
     let svg = `<svg viewBox="0 0 100 120">`;
     svg += `<line x1="10" y1="20" x2="90" y2="20" stroke="black" stroke-width="${offset===0?3:1}"/>`;
-    
-    // Gitter zeichnen
     for(let i=0; i<6; i++) svg += `<line x1="${10+i*16}" y1="20" x2="${10+i*16}" y2="100" stroke="#ccc"/>`;
     for(let i=0; i<5; i++) svg += `<line x1="10" y1="${20+i*20}" x2="90" y2="${20+i*20}" stroke="#ccc"/>`;
-    
     if (offset > 0) svg += `<text x="92" y="38" font-size="12" font-weight="bold" fill="#0284c7">${offset}fr</text>`;
-
     adj.forEach((f, s) => {
         if(f === 0) svg += `<circle cx="${10+s*16}" cy="12" r="4" fill="none" stroke="green" stroke-width="1.5"/>`;
-        else if(f > 0) {
-            // FIX: Nur +1 addieren, wenn Offset aktiv ist. Sonst ist f absolut.
-            let relF = (offset > 0) ? f - offset + 1 : f;
-            svg += `<circle cx="${10+s*16}" cy="${20+(relF*20)-10}" r="6" fill="#1e293b"/>`;
-        }
+        else if(f > 0) { let relF = (offset > 0) ? f - offset + 1 : f; svg += `<circle cx="${10+s*16}" cy="${20+(relF*20)-10}" r="6" fill="#1e293b"/>`; }
         else if(f === -1) svg += `<text x="${6+s*16}" y="14" font-size="14" fill="red">×</text>`;
     });
     return svg + `</svg>`;
@@ -208,32 +190,117 @@ function render() {
     const tuningText = document.getElementById('tuningSelect').options[document.getElementById('tuningSelect').selectedIndex].text;
     document.getElementById('outTitle').innerText = document.getElementById('titleIn').value || 'Mein Song';
     document.getElementById('outMeta').innerText = `Key: ${document.getElementById('keyIn').value || '-'} | Tuning: ${tuningText}`;
-    
     const outContent = document.getElementById('outContent');
     const outChords = document.getElementById('outChords');
     outContent.innerHTML = ''; outChords.innerHTML = '';
-    
     const found = new Set();
     input.split('\n').forEach(line => {
         const lineDiv = document.createElement('div'); lineDiv.className = 'song-line';
         const onlyChords = line.trim().split(/\s+/).every(w => isChord(w));
-        
         line.split(/(\s+)/).forEach(word => {
             if (isChord(word)) {
-                let c = word.trim();
-                let norm = c.charAt(0).toUpperCase() + c.slice(1);
-                found.add(norm);
+                let c = word.trim(); let norm = c.charAt(0).toUpperCase() + c.slice(1); found.add(norm);
                 lineDiv.innerHTML += `<span class="chord-wrap"><span class="chord-label">${c}</span>${onlyChords ? '&nbsp;&nbsp;&nbsp;' : word}</span>`;
-            } else {
-                lineDiv.innerHTML += `<span>${word.replace(/ /g, '&nbsp;')}</span>`;
-            }
+            } else { lineDiv.innerHTML += `<span>${word.replace(/ /g, '&nbsp;')}</span>`; }
         });
         outContent.appendChild(lineDiv);
     });
+    found.forEach(c => { if(patterns[c]) outChords.innerHTML += `<div class="chord-item"><b>${c}</b><br>${createSvg(patterns[c])}</div>`; });
+}
 
-    found.forEach(c => {
-        if(patterns[c]) outChords.innerHTML += `<div class="chord-item"><b>${c}</b><br>${createSvg(patterns[c])}</div>`;
+// --- SPEICHER-FUNKTIONEN ---
+let library = JSON.parse(localStorage.getItem('chordWanzeLib') || '{}');
+
+// Auto-Load from GitHub Pages (same directory)
+async function loadCloudLibrary() {
+    const status = document.getElementById('cloudStatus');
+    try {
+        status.innerText = 'Sync mit Cloud...';
+        // Cache-Busting mit Timestamp, damit immer die neueste Datei von GitHub kommt
+        const response = await fetch('chordwanze_songs.json?t=' + new Date().getTime());
+        if (response.ok) {
+            const cloudLib = await response.json();
+            // Merge: Cloud Songs laden, aber lokale Änderungen nicht überschreiben (außer sie fehlen lokal)
+            // Wenn du willst, dass die Cloud IMMER gewinnt, tausche die Reihenfolge: {...library, ...cloudLib}
+            library = { ...cloudLib, ...library }; 
+            localStorage.setItem('chordWanzeLib', JSON.stringify(library));
+            updateLibraryUI();
+            status.innerText = '☁️ Cloud-Songs geladen';
+            status.style.color = '#22c55e';
+        } else {
+            throw new Error("Keine Cloud-Datei");
+        }
+    } catch (e) {
+        console.log("Keine externe Bibliothek gefunden oder Fehler beim Laden.");
+        status.innerText = '⚡ Nur lokaler Modus';
+    }
+}
+
+function saveCurrentSong() {
+    const title = document.getElementById('titleIn').value.trim();
+    if (!title) return alert("Bitte gib einen Titel ein!");
+    library[title] = {
+        title: title,
+        key: document.getElementById('keyIn').value,
+        tuning: document.getElementById('tuningSelect').value,
+        content: document.getElementById('editor').value
+    };
+    localStorage.setItem('chordWanzeLib', JSON.stringify(library));
+    updateLibraryUI();
+}
+
+function updateLibraryUI() {
+    const list = document.getElementById('savedSongsList');
+    list.innerHTML = '';
+    const keys = Object.keys(library).sort();
+    if (keys.length === 0) {
+        list.innerHTML = '<li style="color:#64748b; font-size:0.8rem; font-style:italic;">Noch keine Songs gespeichert.</li>';
+        return;
+    }
+    keys.forEach(key => {
+        const li = document.createElement('li');
+        li.className = 'song-item';
+        li.innerHTML = `<span>${key}</span><button class="delete-btn" onclick="deleteSong(event, '${key}')">×</button>`;
+        li.onclick = () => loadSong(key);
+        list.appendChild(li);
     });
+}
+
+function loadSong(key) {
+    const song = library[key];
+    document.getElementById('titleIn').value = song.title;
+    document.getElementById('keyIn').value = song.key;
+    document.getElementById('tuningSelect').value = song.tuning;
+    document.getElementById('editor').value = song.content;
+    render();
+}
+
+function deleteSong(e, key) {
+    e.stopPropagation();
+    if(confirm(`"${key}" wirklich löschen?`)) {
+        delete library[key];
+        localStorage.setItem('chordWanzeLib', JSON.stringify(library));
+        updateLibraryUI();
+    }
+}
+
+function exportLibrary() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(library));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "chordwanze_songs.json");
+    downloadAnchor.click();
+}
+
+function importLibrary(event) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const imported = JSON.parse(e.target.result);
+        library = {...library, ...imported};
+        localStorage.setItem('chordWanzeLib', JSON.stringify(library));
+        updateLibraryUI();
+    };
+    reader.readAsText(event.target.files[0]);
 }
 
 function toggleLibrary() {
@@ -241,31 +308,24 @@ function toggleLibrary() {
     if (lib.style.display === 'none') {
         lib.style.display = 'grid'; lib.innerHTML = '';
         const all = Object.keys(patterns).sort();
-        
         const createSection = (title, list) => {
             if(!list.length) return '';
             let h = `<div style="grid-column: 1/-1; margin-top:20px; border-bottom:1px solid var(--primary); color:var(--primary); font-weight:bold; padding-bottom:5px; text-transform:uppercase; font-size:0.8rem;">${title}</div>`;
-            list.forEach(c => { 
-                h += `<div class="chord-item" style="background:#0f172a; padding:10px; border-radius:8px; border:1px solid #334155;">
-                    <b style="color:white">${c}</b><br>${createSvg(patterns[c])}
-                </div>`; 
-            });
+            list.forEach(c => { h += `<div class="chord-item" style="background:#0f172a; padding:10px; border-radius:8px; border:1px solid #334155;"><b style="color:white">${c}</b><br>${createSvg(patterns[c])}</div>`; });
             return h;
         };
-
         const power = all.filter(c => c.endsWith('5'));
         const basics = ['C','D','E','F','G','A','Am','Em','Dm'];
         const others = all.filter(c => !power.includes(c) && !basics.includes(c));
-
-        lib.innerHTML += createSection('🔥 Powerchords', power) + 
-                         createSection('🎸 Basics', basics) + 
-                         createSection('📚 Alle anderen', others);
-    } else {
-        lib.style.display = 'none';
-    }
+        lib.innerHTML += createSection('🔥 Powerchords', power) + createSection('🎸 Basics', basics) + createSection('📚 Alle anderen', others);
+    } else { lib.style.display = 'none'; }
 }
 
-window.onload = render;
+window.onload = () => { 
+    updateLibraryUI(); 
+    loadCloudLibrary(); // Startet den Cloud-Import
+    render(); 
+};
 </script>
 </body>
 </html>
